@@ -185,7 +185,7 @@ func (f *FlagSetFiller) processField(flagSet *flag.FlagSet, fieldRef interface{}
 				override = value
 			}
 		}
-		f.processStringSlice(fieldRef, hasDefaultTag, tagDefault, flagSet, renamed, usage, override)
+		f.processIntSlice(fieldRef, hasDefaultTag, tagDefault, flagSet, renamed, usage, override)
 
 	case t == stringToStringMapType, fieldType == "stringMap":
 		f.processStringToStringMap(fieldRef, hasDefaultTag, tagDefault, flagSet, renamed, usage)
