@@ -13,6 +13,7 @@ import (
 var (
 	durationType          = reflect.TypeOf(time.Duration(0))
 	stringSliceType       = reflect.TypeOf([]string{})
+	intSliceType          = reflect.TypeOf([]int{})
 	stringToStringMapType = reflect.TypeOf(map[string]string{})
 )
 
@@ -177,6 +178,15 @@ func (f *FlagSetFiller) processField(flagSet *flag.FlagSet, fieldRef interface{}
 		}
 		f.processStringSlice(fieldRef, hasDefaultTag, tagDefault, flagSet, renamed, usage, override)
 
+	case t == intSliceType, fieldType == "intSlice":
+		var override bool
+		if overrideValue, exists := tag.Lookup("override-value"); exists {
+			if value, err := strconv.ParseBool(overrideValue); err == nil {
+				override = value
+			}
+		}
+		f.processStringSlice(fieldRef, hasDefaultTag, tagDefault, flagSet, renamed, usage, override)
+
 	case t == stringToStringMapType, fieldType == "stringMap":
 		f.processStringToStringMap(fieldRef, hasDefaultTag, tagDefault, flagSet, renamed, usage)
 
@@ -249,6 +259,28 @@ func (f *FlagSetFiller) processStringSlice(fieldRef interface{}, hasDefaultTag b
 		*casted = parseStringSlice(tagDefault)
 	}
 	flagSet.Var(&strSliceVar{ref: casted, override: override}, renamed, usage)
+}
+
+func (f *FlagSetFiller) processIntSlice(fieldRef interface{}, hasDefaultTag bool, tagDefault string, flagSet *flag.FlagSet, renamed string, usage string, override bool) {
+	casted, ok := fieldRef.(*[]int)
+	if !ok {
+		_ = f.processCustom(
+			fieldRef,
+			func(s string) (interface{}, error) {
+				return parseIntSlice(s), nil
+			},
+			hasDefaultTag,
+			tagDefault,
+			flagSet,
+			renamed,
+			usage,
+		)
+		return
+	}
+	if hasDefaultTag {
+		*casted = parseIntSlice(tagDefault)
+	}
+	flagSet.Var(&strIntVar{ref: casted, override: override}, renamed, usage)
 }
 
 func (f *FlagSetFiller) processUint(fieldRef interface{}, hasDefaultTag bool, tagDefault string, flagSet *flag.FlagSet, renamed string, usage string) (err error) {
@@ -527,6 +559,47 @@ func (s *strSliceVar) Set(val string) error {
 
 func parseStringSlice(val string) []string {
 	return strings.Split(val, ",")
+}
+
+type strIntVar struct {
+	ref      *[]int
+	override bool
+}
+
+func (s *strIntVar) String() string {
+	if s.ref == nil {
+		return ""
+	}
+	ref := []string{}
+	ints := *s.ref
+	for _, i := range ints {
+		ref = append(ref, strconv.Itoa(i))
+	}
+	return strings.Join(ref, ",")
+}
+
+func parseIntSlice(val string) []int {
+	parts := strings.Split(val, ",")
+	res := []int{}
+	for _, str := range parts {
+		i, e := strconv.Atoi(str)
+		if e == nil {
+			res = append(res, i)
+		}
+	}
+	return res
+}
+
+func (s *strIntVar) Set(val string) error {
+	parts := parseIntSlice(val)
+	if s.override {
+		*s.ref = parts
+		return nil
+	}
+
+	*s.ref = append(*s.ref, parts...)
+
+	return nil
 }
 
 type strToStrMapVar struct {
