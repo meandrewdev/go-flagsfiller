@@ -1,4 +1,4 @@
-module github.com/itzg/go-flagsfiller
+module github.com/meandrewdev/go-flagsfiller
 
 go 1.16
 

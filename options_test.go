@@ -2,7 +2,7 @@ package flagsfiller_test
 
 import (
 	"fmt"
-	"github.com/itzg/go-flagsfiller"
+	"github.com/meandrewdev/go-flagsfiller"
 )
 
 func ExampleCompositeRenamer() {

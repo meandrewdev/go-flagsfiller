@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/itzg/go-flagsfiller"
+	"github.com/meandrewdev/go-flagsfiller"
 	"log"
 	"time"
 )

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/iancoleman/strcase"
-	"github.com/itzg/go-flagsfiller"
+	"github.com/meandrewdev/go-flagsfiller"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
