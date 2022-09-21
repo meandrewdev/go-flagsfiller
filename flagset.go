@@ -65,15 +65,18 @@ func (f *FlagSetFiller) walkFields(flagSet *flag.FlagSet, prefix string,
 		field := structType.Field(i)
 		fieldValue := structVal.Field(i)
 
-		if flagTag, ok := field.Tag.Lookup("flag"); ok {
-			if flagTag == "" {
-				continue
-			}
+		flagTag, ok := field.Tag.Lookup("flag")
+		if ok && flagTag == "" {
+			continue
 		}
 
 		switch field.Type.Kind() {
 		case reflect.Struct:
-			err := f.walkFields(flagSet, prefix+field.Name, fieldValue, field.Type)
+			name := field.Name
+			if flagTag == "!noprefix" {
+				name = ""
+			}
+			err := f.walkFields(flagSet, prefix+name, fieldValue, field.Type)
 			if err != nil {
 				return fmt.Errorf("failed to process %s of %s: %w", field.Name, structType.String(), err)
 			}
@@ -130,7 +133,7 @@ func (f *FlagSetFiller) processField(flagSet *flag.FlagSet, fieldRef interface{}
 
 	var renamed string
 	if override, exists := tag.Lookup("flag"); exists {
-		if override == "" {
+		if override == "" || override == "!noprefix" {
 			// empty flag override signal to skip this field
 			return nil
 		}
