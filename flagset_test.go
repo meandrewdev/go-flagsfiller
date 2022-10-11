@@ -2,6 +2,7 @@ package flagsfiller_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -47,18 +48,26 @@ func TestCustomFields(t *testing.T) {
 	type CustomStringSlice []string
 	type CustomStringMap map[string]string
 
+	flagsfiller.AddConverter("json-string-slice", func(s string) (res interface{}, err error) {
+		var v []string
+		err = json.Unmarshal([]byte(s), &v)
+		res = v
+		return
+	})
+
 	t.Run("Default values", func(t *testing.T) {
 		type Config struct {
-			String      CustomStringType  `default:"stringValue"`
-			Bool        CustomBoolType    `default:"true"`
-			Float64     CustomFloat64     `default:"1.234"`
-			Duration    CustomDuration    `type:"duration" default:"2s"`
-			Int64       CustomInt64       `default:"-1"`
-			Int         CustomInt         `default:"-2"`
-			Uint64      CustomUint64      `default:"1"`
-			Uint        CustomUint        `default:"2"`
-			StringSlice CustomStringSlice `type:"stringSlice" default:"one,two"`
-			StringMap   CustomStringMap   `type:"stringMap" default:"one=value1,two=value2"`
+			String          CustomStringType  `default:"stringValue"`
+			Bool            CustomBoolType    `default:"true"`
+			Float64         CustomFloat64     `default:"1.234"`
+			Duration        CustomDuration    `type:"duration" default:"2s"`
+			Int64           CustomInt64       `default:"-1"`
+			Int             CustomInt         `default:"-2"`
+			Uint64          CustomUint64      `default:"1"`
+			Uint            CustomUint        `default:"2"`
+			StringSlice     CustomStringSlice `type:"stringSlice" default:"one,two"`
+			StringMap       CustomStringMap   `type:"stringMap" default:"one=value1,two=value2"`
+			JsonStringSlice []string          `type:"json-string-slice" default:"[\"one\", \"two\"]"`
 		}
 
 		var config Config
@@ -82,20 +91,22 @@ func TestCustomFields(t *testing.T) {
 		assert.Equal(t, CustomUint(2), config.Uint)
 		assert.Equal(t, CustomStringSlice{"one", "two"}, config.StringSlice)
 		assert.Equal(t, CustomStringMap{"one": "value1", "two": "value2"}, config.StringMap)
+		assert.Equal(t, []string{"one", "two"}, config.JsonStringSlice)
 	})
 
 	t.Run("Values set from arguments", func(t *testing.T) {
 		type Config struct {
-			String      CustomStringType
-			Bool        CustomBoolType
-			Float64     CustomFloat64
-			Duration    CustomDuration `type:"duration"`
-			Int64       CustomInt64
-			Int         CustomInt
-			Uint64      CustomUint64
-			Uint        CustomUint
-			StringSlice CustomStringSlice `type:"stringSlice"`
-			StringMap   CustomStringMap   `type:"stringMap"`
+			String          CustomStringType
+			Bool            CustomBoolType
+			Float64         CustomFloat64
+			Duration        CustomDuration `type:"duration"`
+			Int64           CustomInt64
+			Int             CustomInt
+			Uint64          CustomUint64
+			Uint            CustomUint
+			StringSlice     CustomStringSlice `type:"stringSlice"`
+			StringMap       CustomStringMap   `type:"stringMap"`
+			JsonStringSlice []string          `type:"json-string-slice"`
 		}
 
 		var config Config
@@ -117,6 +128,7 @@ func TestCustomFields(t *testing.T) {
 			"--uint", "2",
 			"--string-slice", "one,two",
 			"--string-map", "one=value1,two=value2",
+			"--json-string-slice", `["one", "two"]`,
 		})
 		require.NoError(t, err)
 
@@ -130,6 +142,7 @@ func TestCustomFields(t *testing.T) {
 		assert.Equal(t, CustomUint(2), config.Uint)
 		assert.Equal(t, CustomStringSlice{"one", "two"}, config.StringSlice)
 		assert.Equal(t, CustomStringMap{"one": "value1", "two": "value2"}, config.StringMap)
+		assert.Equal(t, []string{"one", "two"}, config.JsonStringSlice)
 	})
 }
 

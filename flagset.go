@@ -17,6 +17,14 @@ var (
 	stringToStringMapType = reflect.TypeOf(map[string]string{})
 )
 
+type ConvertHandler func(string) (interface{}, error)
+
+var customConverters = map[string]ConvertHandler{}
+
+func AddConverter(t string, converter ConvertHandler) {
+	customConverters[t] = converter
+}
+
 // FlagSetFiller is used to map the fields of a struct into flags of a flag.FlagSet
 type FlagSetFiller struct {
 	options *fillerOptions
@@ -143,7 +151,11 @@ func (f *FlagSetFiller) processField(flagSet *flag.FlagSet, fieldRef interface{}
 		renamed = f.options.renameLongName(name)
 	}
 
+	converter, customType := customConverters[fieldType]
 	switch {
+	case customType:
+		err = f.processCustom(fieldRef, converter, hasDefaultTag, tagDefault, flagSet, renamed, usage)
+
 	case t.Kind() == reflect.String:
 		f.processString(fieldRef, hasDefaultTag, tagDefault, flagSet, renamed, usage)
 
@@ -513,7 +525,7 @@ func (f *FlagSetFiller) processString(fieldRef interface{}, hasDefaultTag bool, 
 	flagSet.StringVar(casted, renamed, defaultVal, usage)
 }
 
-func (f *FlagSetFiller) processCustom(fieldRef interface{}, converter func(string) (interface{}, error), hasDefaultTag bool, tagDefault string, flagSet *flag.FlagSet, renamed string, usage string) error {
+func (f *FlagSetFiller) processCustom(fieldRef interface{}, converter ConvertHandler, hasDefaultTag bool, tagDefault string, flagSet *flag.FlagSet, renamed string, usage string) error {
 	if hasDefaultTag {
 		value, err := converter(tagDefault)
 		if err != nil {
